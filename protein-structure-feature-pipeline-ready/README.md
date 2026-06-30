@@ -174,15 +174,8 @@ The Slurm files use environment variables such as `PROJECT_ROOT`, `PYTHON`, `IUP
 
 The repository is intended as a public, reproducible demonstration of a structural bioinformatics workflow. Example folders are provided for small public or synthetic inputs and outputs. Large production outputs, local logs, raw internal caches, and private scratch directories are excluded by `.gitignore`.
 
-## Skills demonstrated
+## Technical Scope
 
-- Python scientific scripting
-- Linux command-line workflow
-- Protein structure parsing and chain-level data modeling
-- Structural bioinformatics feature extraction
-- UniProt/SIFTS annotation mapping
-- Mapping fallback and problem-chain repair
-- JSON/CSV data engineering
-- Quality-control workflow design
-- Slurm/HPC batch processing
-- Reproducible project organization
+This repository focuses on practical protein structure data processing at the chain and residue levels. It covers structure parsing, feature extraction, UniProt/SIFTS-based annotation mapping, problem-chain detection, quality-control reporting, and Slurm-based batch execution.
+
+The workflow is designed to demonstrate how raw structure and sequence resources can be converted into structured, reproducible, and inspection-ready outputs for downstream structural bioinformatics analysis.
