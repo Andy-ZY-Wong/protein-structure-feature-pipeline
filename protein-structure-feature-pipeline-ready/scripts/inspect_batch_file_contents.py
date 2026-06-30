@@ -31,7 +31,7 @@ def normalize_line(s):
     s = re.sub(r"[-+]?\d+\.\d+", "<FLOAT>", s)
     s = re.sub(r"[-+]?\d+", "<NUM>", s)
 
-    # 很长的纯序列行压缩成 <SEQ>
+    # Compress very long plain sequence lines to <SEQ>
     if re.fullmatch(r"[A-Za-z\-*\.]{40,}", s):
         return "<SEQ>"
 
@@ -89,13 +89,13 @@ def detect_kind(path: Path, text: str, raw: bytes):
     if "," in first and len(first.split(",")) >= 3:
         return "CSV_or_comma_table"
 
-    # 常见日志
+    # Common log patterns
     log_words = ["error", "warning", "traceback", "finished", "started", "processing", "job", "slurm"]
     low = text[:2000].lower()
     if any(w in low for w in log_words) and suffix in {"log", "txt", "out", "err"}:
         return "log_or_runtime_text"
 
-    # 对齐/序列处理类文件特征
+    # Alignment/sequence-processing file signatures
     if any(x in low for x in ["align", "alignment", "delete", "deleted", "full", "chain", "residue"]):
         return "custom_sequence_or_alignment_text"
 
@@ -210,7 +210,7 @@ def main():
         suffix_sig_counter[suffix][sig] += 1
         suffix_filetype_counter[suffix][fcmd] += 1
 
-        # 每个 suffix 下保留若干种代表性签名的样本
+        # Keep representative samples for several signatures under each suffix
         if len(examples[suffix]) < args.max_samples_per_suffix:
             if sig not in examples[suffix]:
                 examples[suffix][sig] = {
@@ -233,7 +233,7 @@ def main():
             "error": "",
         })
 
-    # 每个文件一行的详细表
+    # Detailed table with one row per file
     with open(file_audit_csv, "w", newline="", encoding="utf-8") as f:
         fields = [
             "path",
@@ -250,7 +250,7 @@ def main():
         w.writeheader()
         w.writerows(rows)
 
-    # 每个 suffix 的汇总表
+    # Summary table by suffix
     summary_rows = []
     for suffix, count in suffix_counter.most_common():
         kind_summary = "; ".join(
@@ -285,7 +285,7 @@ def main():
         w.writeheader()
         w.writerows(summary_rows)
 
-    # 每种 suffix 的代表内容样本
+    # Representative content samples for each suffix
     with open(samples_md, "w", encoding="utf-8") as f:
         f.write("# Batch file content samples\n\n")
         f.write(f"Root: `{root}`\n\n")

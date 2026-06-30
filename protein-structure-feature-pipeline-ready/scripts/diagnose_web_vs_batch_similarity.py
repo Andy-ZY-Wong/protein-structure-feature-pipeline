@@ -49,7 +49,7 @@ def read_pdb_ca_seq(path):
                 if l[12:16].strip() != "CA":
                     continue
 
-                # 兼容普通单字符 chain 和你们可能使用的双字符 chain
+                # Handle ordinary single-character chains and possible two-character chains
                 chain = l[20:22].strip() or l[21].strip()
                 resname = l[17:20].strip()
                 resseq = l[22:27].strip()
@@ -96,11 +96,11 @@ def read_fasta_like(path):
 
 def seq_similarity(a, b):
     """
-    返回一个简单但实用的相似度：
-    - exact: 是否完全一致
-    - containment: 是否一条序列包含另一条
-    - identity_shorter: 按较短长度逐位比较的一致率
-    - coverage_shorter: 短序列长度 / 长序列长度
+    Return a simple but practical similarity summary:
+    - exact: whether sequences are exactly identical
+    - containment: whether one sequence contains the other
+    - identity_shorter: per-position identity over the shorter length
+    - coverage_shorter: shorter length / longer length
     """
     a = norm_seq(a)
     b = norm_seq(b)
@@ -136,7 +136,7 @@ def best_match(query_records, target_records):
     query_records: [(name, seq)]
     target_records: [(name, seq)]
 
-    返回每条 query 在 target 中的最佳匹配，并统计整体情况。
+    Return the best target match for each query and summarize the overall result.
     """
     rows = []
     exact_count = 0
@@ -249,7 +249,7 @@ def candidate_batch_files(entry_id, pdb_id, aux_index, batch_root, max_name_hits
             if q.exists():
                 add_file(q, suf)
 
-        # 兼容无点后缀或特殊命名
+        # Handle files without dot suffixes or with special naming
         try:
             for q in parent.iterdir():
                 if q.is_file() and q.name.startswith(stem):
@@ -257,14 +257,14 @@ def candidate_batch_files(entry_id, pdb_id, aux_index, batch_root, max_name_hits
         except Exception:
             pass
 
-    # 1. 从 batch_aux_file_index.csv 根据 pdb_id 找
+    # 1. Search batch_aux_file_index.csv by pdb_id
     for r in aux_index.get(pdb_id, []):
         p = Path(r.get("path", ""))
         if p.exists():
             add_file(p, r.get("suffix", ""))
             add_same_stem_siblings(p)
 
-    # 2. 再从文件名中补充 entry_id / pdb_id 命中的文件
+    # 2. Also add files whose names match entry_id / pdb_id
     root = Path(batch_root)
     if root.exists():
         patterns = []
@@ -298,7 +298,7 @@ def file_to_records(suffix, path):
         d = read_pdb_ca_seq(path)
         return [(f"{Path(path).name}|chain:{c}", s) for c, s in d.items()]
 
-    # 这些都按 FASTA-like 处理
+    # Treat these files as FASTA-like inputs
     if suffix in {
         "fasta", "fa", "faa", "fulllen", "manalign", "autoalign",
         "torcsb", "autodel", "mandel", "fas"

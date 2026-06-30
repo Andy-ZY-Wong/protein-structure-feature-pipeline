@@ -35,28 +35,18 @@ notebooks/        Reserved for result visualization notebooks
 
 ## Pipeline overview
 
-```text
-manifest / structure list
-        ↓
-00_build_manifest.py
-        ↓
-01_build_skeleton.py
-        ↓
-02_compute_local_tracks.py
-        ↓
-03_compute_disorder_qscore.py / 04_reparse_qscore_raw.py
-        ↓
-05_qc_sequence_features.py
-        ↓
-07_sifts_uniprot_annotations.py
-        ↓
-07b_sifts_alignment_fallback.py
-        ↓
-07c_aux_guided_uniprot_mapping.py / 09_repair_problem_chains_aux.py / 11_torcsb_guided_mapping_repair.py
-        ↓
-08_build_annotation_groups.py
-        ↓
-10_qc_all_chain_json.py
+![Workflow diagram](docs/workflow.svg)
+
+```mermaid
+flowchart LR
+    A[Raw inputs: PDB/mmCIF, FASTA, maps] --> B[00 Manifest construction]
+    B --> C[01 Chain-level JSON skeleton]
+    C --> D[02 Local structural tracks]
+    D --> E[03/04 Disorder and Q-score]
+    E --> F[07 UniProt/SIFTS mapping]
+    F --> G[07b/07c/09/11 Mapping fallback and repair]
+    G --> H[08 Annotation groups]
+    H --> I[10 Final chain-level QC]
 ```
 
 ## Installation
@@ -101,6 +91,22 @@ The pipeline is designed to skip or mark optional features when the correspondin
 | 10 | `10_qc_all_chain_json.py` | Final all-chain QC summary |
 | 11 | `11_torcsb_guided_mapping_repair.py` | Repair mappings using `.toRCSB` chain correspondence |
 
+## Included small-scale demo data
+
+This repository includes a lightweight synthetic demo dataset so that the project can be inspected without downloading a full structure database. The demo data are intentionally small and are designed to exercise the main data model rather than reproduce production-scale results.
+
+```text
+example_data/manifest/demo_manifest.csv        Demo structure manifest
+example_data/raw/mmcif/demo_1abc.pdb           Synthetic PDB-like structure with two chains
+example_data/raw/mmcif/demo_2xyz.pdb           Synthetic PDB-like structure with a modified residue
+example_data/raw/fasta/demo_1abc.fasta         Demo FASTA records
+example_data/raw/fasta/demo_2xyz.fasta         Demo FASTA records
+example_data/raw/sifts/demo_sifts_mapping.tsv  SIFTS-like chain-to-UniProt mapping table
+example_data/raw/qscore/demo_qscore.csv        Demo Q-score summary table
+```
+
+The `example_outputs/` directory contains generated chain JSON files, local-track summaries, annotation tables, and final QC reports from the synthetic demo.
+
 ## Example commands
 
 Build chain skeletons:
@@ -108,8 +114,9 @@ Build chain skeletons:
 ```bash
 python scripts/01_build_skeleton.py \
   --manifest example_data/manifest/demo_manifest.csv \
-  --json-root example_outputs/json \
-  --manifest-out example_outputs/manifest/manifest_skeleton.csv
+  --out-dir example_outputs/json \
+  --manifest-out example_outputs/manifest/manifest_skeleton.csv \
+  --overwrite
 ```
 
 Compute local tracks:
@@ -133,7 +140,15 @@ python scripts/07_sifts_uniprot_annotations.py \
   --summary-out example_outputs/qc/sifts_uniprot_annotation_summary.csv
 ```
 
-Run final QC:
+
+Run the synthetic demo feature/annotation population step:
+
+```bash
+python scripts/demo_populate_synthetic_features.py \
+  --json-root example_outputs/json
+```
+
+Then run final QC:
 
 ```bash
 python scripts/10_qc_all_chain_json.py \

@@ -1,0 +1,5 @@
+group_id,group_type,entry_id,pdb_id,chain_id,representative_chain,group_size,group_rule
+uniprot_P00001,uniprot_group,demo_1abc,1ABC,A,yes,1,same UniProt accession
+uniprot_P00002,uniprot_group,demo_1abc,1ABC,B,yes,1,same UniProt accession
+uniprot_P00003,uniprot_group,demo_2xyz,2XYZ,A,yes,1,same UniProt accession
+uniprot_P00004,uniprot_group,demo_2xyz,2XYZ,C,yes,1,same UniProt accession

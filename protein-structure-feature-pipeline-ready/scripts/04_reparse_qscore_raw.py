@@ -4,18 +4,18 @@
 """
 04_reparse_qscore_raw.py
 
-功能：
-从已经保存好的 ChimeraX QScore raw 文件重新解析 Q-score，
-并回填到已有 chain JSON 中。
+Purpose:
+Reparse Q-score values from saved ChimeraX QScore raw files,
+and write them back to existing chain JSON files.
 
-不会重新运行 ChimeraX。
-不会重新打开 map。
-不会重新计算 Q-score。
+ChimeraX is not rerun.
+Map files are not reopened.
+Q-score is not recomputed.
 
-默认 raw 文件命名：
+Default raw file naming:
   example_outputs/qc/qscore_raw_all/cf1a0a.qscore.raw.txt
 
-默认 JSON 目录：
+Default JSON directory:
   example_outputs/json/cf1a0a/chains/A.json
 """
 
@@ -66,7 +66,7 @@ def normalize_chain_id(x: str) -> str:
 
 def parse_residue_number(text: str) -> Optional[Tuple[int, str]]:
     """
-    支持：
+    Supports:
       50
       50A
       A:50
@@ -85,15 +85,15 @@ def parse_residue_number(text: str) -> Optional[Tuple[int, str]]:
 
 def parse_qscore_raw(raw_path: Path) -> Dict[str, Dict[int, float]]:
     """
-    解析 ChimeraX QScore raw 文件。
+    Parse a ChimeraX QScore raw file.
 
-    识别格式：
+    Recognized formats:
 
       ChainId A - Protein
           Name    Number    Q_backbone    Q_side_chain    Q_residue    Q_expected@3.00A
           ALA     50        0.6998        -0.0971         0.5006       0.5804
 
-    返回：
+    Returns:
       {
         "A": {
           50: 0.5006,
@@ -103,10 +103,10 @@ def parse_qscore_raw(raw_path: Path) -> Dict[str, Dict[int, float]]:
         "B": {...}
       }
 
-    注意：
-    - 使用 Q_residue 作为 residue-level Q-score；
-    - 没有 residue name / 没有 Q_residue 的空行会跳过；
-    - Q_side_chain 为 N/A 不影响，因为我们不用它。
+    Notes:
+    - Use Q_residue as the residue-level Q-score;
+    - Skip blank rows without residue names or Q_residue values;
+    - Q_side_chain being N/A is fine because it is not used.
     """
 
     result: Dict[str, Dict[int, float]] = {}
@@ -121,7 +121,7 @@ def parse_qscore_raw(raw_path: Path) -> Dict[str, Dict[int, float]]:
             if not s:
                 continue
 
-            # 进入某条链的 residue-level 表格
+            # Enter the residue-level table for one chain
             m = re.match(r"^ChainId\s+(\S+)\s+-\s+Protein", s)
             if m:
                 current_chain = normalize_chain_id(m.group(1))
@@ -130,7 +130,7 @@ def parse_qscore_raw(raw_path: Path) -> Dict[str, Dict[int, float]]:
                 header = None
                 continue
 
-            # 遇到 ChainId A 这种 summary 行，不是 residue 表格
+            # A summary line such as ChainId A is not a residue table
             if s.startswith("ChainId ") and "- Protein" not in s:
                 current_chain = None
                 in_protein_table = False
@@ -143,7 +143,7 @@ def parse_qscore_raw(raw_path: Path) -> Dict[str, Dict[int, float]]:
             parts = s.split()
             low = [p.lower() for p in parts]
 
-            # 表头：Name Number Q_backbone Q_side_chain Q_residue Q_expected@...
+            # Header: Name Number Q_backbone Q_side_chain Q_residue Q_expected@...
             if "name" in low and "number" in low and "q_residue" in low:
                 header = low
                 continue
@@ -165,7 +165,7 @@ def parse_qscore_raw(raw_path: Path) -> Dict[str, Dict[int, float]]:
             resnum_text = parts[number_i].strip()
             q_text = parts[q_i].strip()
 
-            # 跳过空残基行，比如：
+            # Skip blank residue rows, for example:
             # 118    0.5804
             if not resname or len(resname) < 3:
                 continue
@@ -190,10 +190,10 @@ def parse_qscore_raw(raw_path: Path) -> Dict[str, Dict[int, float]]:
 
 def build_residue_mapping(chain_json: Dict) -> Dict[int, int]:
     """
-    建立：
+    Build:
       pdb_resseq -> chain_index
 
-    如果有重复编号，保留第一次出现。
+    If duplicate residue numbers exist, keep the first occurrence.
     """
 
     mapping: Dict[int, int] = {}
@@ -225,9 +225,9 @@ def update_chain_qscore(
     min_coverage: float = 0.2
 ) -> Tuple[str, int, int, float]:
     """
-    把某条链的 raw qscore 写回 chain JSON。
+    Write raw qscore values back to a chain JSON file.
 
-    返回：
+    Returns:
       status, mapped_count, length, coverage
     """
 
@@ -324,7 +324,7 @@ def update_chain_qscore(
 
 def update_entry_status(json_root: Path, entry_id: str) -> None:
     """
-    根据所有 chain qscore 状态更新 entry.json。
+    Update entry.json based on all chain qscore statuses.
     """
 
     entry_json_path = json_root / entry_id / "entry.json"
@@ -431,7 +431,7 @@ def process_one_raw(
         if raw_scores is None:
             summary["missing_chain_json"] += 1
 
-            # 这个链没有 raw qscore，写成 failed
+            # This chain has no raw qscore; mark it as failed
             try:
                 d = read_json(chain_path)
                 d.setdefault("computed_features", {})
@@ -516,34 +516,34 @@ def main():
     p.add_argument(
         "--raw-dir",
         default="example_outputs/qc/qscore_raw_all",
-        help="保存 *.qscore.raw.txt 的目录"
+        help="Directory containing *.qscore.raw.txt files"
     )
     p.add_argument(
         "--json-root",
         default="example_outputs/json",
-        help="JSON 根目录"
+        help="JSON root directory"
     )
     p.add_argument(
         "--summary-out",
         default="example_outputs/qc/qscore_reparse_summary.csv",
-        help="输出 reparse 汇总表"
+        help="Output reparse summary table"
     )
     p.add_argument(
         "--limit",
         type=int,
         default=0,
-        help="只处理前 N 个 raw 文件，用于测试"
+        help="Process only the first N raw files for testing"
     )
     p.add_argument(
         "--entry",
         default="",
-        help="只处理某一个 entry，例如 cf1a0a"
+        help="Process only one entry, e.g. cf1a0a"
     )
     p.add_argument(
         "--min-coverage",
         type=float,
         default=0.2,
-        help="coverage 低于该阈值时标记为 partial"
+        help="Mark as partial when coverage is below this threshold"
     )
     p.add_argument(
         "--verbose",

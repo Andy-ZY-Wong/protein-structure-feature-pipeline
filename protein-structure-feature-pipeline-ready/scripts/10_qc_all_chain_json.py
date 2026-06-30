@@ -38,12 +38,11 @@ def read_json(path):
 
 
 def safe_len_items(obj):
-    items = obj.get("items", [])
-    if isinstance(items, list):
-        return len(items)
-    values = obj.get("values", [])
-    if isinstance(values, list):
-        return len(values)
+    """Return the number of records stored in a track object."""
+    if "items" in obj and isinstance(obj.get("items"), list):
+        return len(obj.get("items", []))
+    if "values" in obj and isinstance(obj.get("values"), list):
+        return len(obj.get("values", []))
     return obj.get("item_count", obj.get("mapped_count", ""))
 
 
@@ -52,11 +51,11 @@ def get_track_obj(d, name):
     if name in tracks:
         return tracks.get(name, {})
 
-    # 兼容旧 JSON：有些可能直接写在顶层
+    # Compatibility with older JSON files where some fields may be at the top level
     if name in d:
         return d.get(name, {})
 
-    # 兼容 status 里只有状态的情况
+    # Compatibility with status fields that only contain a status string
     status = d.get("status", {}).get(name, "")
     if status:
         return {"status": status}
@@ -79,9 +78,9 @@ def get_track_count(d, name):
 
 def is_bad_local_track(track_name, status, count):
     """
-    本地计算参数原则上应为 done。
-    skipped / failed / partial / missing 都需要记录。
-    qscore 如果 done 但 count=0，也记录。
+    Local computed parameters should generally be done.
+    skipped / failed / partial / missing should all be recorded.
+    If qscore is done but count=0, record it as well.
     """
     if not status:
         return True
@@ -104,11 +103,11 @@ def is_bad_local_track(track_name, status, count):
 
 def is_bad_annotation_track(track_name, status, mapping_quality, external_status):
     """
-    annotation 问题定义：
-    1. mapping 不可靠时，annotation 为 unreliable_mapping 是合理的，但仍然输出到 annotation_problem CSV，
-       因为它确实是无法显示外部注释的链。
-    2. mapping 可靠时，annotation track 不应 failed/missing/unreliable_mapping。
-    3. empty 不一定是错，表示没有该类注释。
+    Definition of annotation issues:
+    1. When mapping is unreliable, annotation=unreliable_mapping is reasonable, but it is still exported to annotation_problem CSV,
+       because such chains cannot reliably display external annotations.
+    2. When mapping is reliable, annotation tracks should not be failed/missing/unreliable_mapping.
+    3. empty is not necessarily an error; it means no annotation of that type is present.
     """
     reliable = mapping_quality in {"HIGH", "ACCEPTABLE", "PARTIAL_USABLE"}
 
@@ -120,7 +119,7 @@ def is_bad_annotation_track(track_name, status, mapping_quality, external_status
             return True
         return False
 
-    # mapping 不可靠：记录为 annotation issue，但不是脚本错误
+    # Unreliable mapping is recorded as an annotation issue, but not as a script error
     if mapping_quality in {"PROBLEM", "FAILED", ""}:
         return True
 

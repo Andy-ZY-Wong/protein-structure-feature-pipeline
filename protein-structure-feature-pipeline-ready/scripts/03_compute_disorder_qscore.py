@@ -4,27 +4,27 @@
 """
 03_compute_disorder_qscore.py
 
-功能：
-在已有 chain-level JSON 的基础上，补充两个 feature：
+Purpose:
+Add two feature groups to existing chain-level JSON:
 
 1. disorder
-   - 基于序列
-   - 默认使用 IUPred2A
-   - 输出每个 residue 的 disorder score
-   - 生成 disorder segments
+   - sequence-based
+   - uses IUPred2A by default
+   - outputs residue-level disorder scores
+   - generates disorder segments
 
 2. qscore
-   - 基于 PDB + cryo-EM map
-   - 通过 ChimeraX + QScore 命令计算
-   - 输出每个 residue 的 Q-score
-   - 映射回每条链 JSON 的 chain_index 坐标
+   - based on PDB + cryo-EM map
+   - computed through ChimeraX + QScore commands
+   - outputs residue-level Q-scores
+   - maps back to chain_index coordinates in each chain JSON
 
-重要修改：
-- QScore 命令使用：
+Important changes:
+- QScore command uses:
     qscore #1 toVolume #2 ...
-  而不是：
+  instead of:
     qscore residues #1 toVolume #2 ...
-- 增强了 QScore 输出解析，支持 Qavg 表格格式。
+- Improved QScore output parsing with support for the Qavg table format.
 """
 
 import argparse
@@ -42,7 +42,7 @@ from typing import Dict, List, Optional, Tuple
 
 
 # ============================================================
-# 基础工具
+# Basic utilities
 # ============================================================
 
 def now_iso() -> str:
@@ -191,7 +191,7 @@ def build_segments_from_values(
     threshold: float = 0.5
 ) -> List[Dict]:
     """
-    把连续 score >= threshold 的区域合并成 segment。
+    Merge consecutive regions with score >= threshold into segments.
     """
 
     segs = []
@@ -228,15 +228,15 @@ def run_iupred2a(
     timeout: int = 180
 ) -> Optional[List[float]]:
     """
-    运行 IUPred2A。
+    Run IUPred2A.
 
-    典型命令：
+    Typical command:
       --iupred-cmd "python /path/to/iupred2a.py"
 
-    实际执行：
+    Actual execution:
       python iupred2a.py temp.fasta long
 
-    解析格式：
+    Parsed format:
       pos aa score
     """
 
@@ -369,12 +369,12 @@ def get_existing_feature_status(chain_path: str, feature_name: str, default: str
 
 def load_map_table(path: str) -> Dict[str, str]:
     """
-    读取 map table。
+    Read the map table.
 
-    支持 CSV/TSV，推荐字段：
+    CSV/TSV is supported; recommended fields:
       entry_id,map_path
 
-    也兼容：
+    Also compatible with:
       cfdb_id,map_path
       map / map_file
     """
@@ -400,10 +400,10 @@ def load_map_table(path: str) -> Dict[str, str]:
 
 def resolve_map_path(row: Dict, args, map_table: Dict[str, str]) -> Optional[str]:
     """
-    多种方式寻找 map 路径：
+    Find map paths using multiple strategies:
 
     1. map table
-    2. manifest 里的 map_path / map_file / em_map_path
+    2. map_path / map_file / em_map_path in the manifest
     3. --map-root + --map-pattern
     """
 
@@ -466,13 +466,13 @@ def make_chimerax_qscore_script(
     qscore_command: str
 ) -> str:
     """
-    生成 ChimeraX command script。
+    Generate a ChimeraX command script.
 
-    注意：
-    正确形式是：
+    Notes:
+    The correct form is:
       qscore #1 toVolume #2 ...
 
-    不是：
+    Not:
       qscore residues #1 toVolume #2 ...
     """
 
@@ -503,9 +503,9 @@ def run_chimerax_qscore(
     timeout: int = 1800
 ) -> Tuple[Optional[str], str]:
     """
-    运行 ChimeraX QScore，返回 QScore 输出文件路径。
+    Run ChimeraX QScore and return the QScore output file path.
 
-    会依次尝试多个 QScore 命令写法。
+    Multiple QScore command styles are tried in sequence.
     """
 
     chimerax = find_chimerax(chimerax_cmd)
@@ -514,16 +514,16 @@ def run_chimerax_qscore(
         return None, "Cannot find ChimeraX executable."
 
     command_templates = [
-        # 推荐主命令
+        # Recommended primary command
         'qscore #1 toVolume #2 useGui false logDetails true outputFile "{output_path}"',
 
-        # 某些版本可能不支持 useGui
+        # Some versions may not support useGui
         'qscore #1 toVolume #2 logDetails true outputFile "{output_path}"',
 
-        # 更简化版本
+        # More simplified version
         'qscore #1 toVolume #2 outputFile "{output_path}"',
 
-        # 最简版本：如果没有 outputFile，则从 stdout 里尝试解析
+        # Simplest version: if outputFile is unavailable, try parsing from stdout
         'qscore #1 toVolume #2',
     ]
 
@@ -588,7 +588,7 @@ def run_chimerax_qscore(
 
 def normalize_chain_id(x: str) -> str:
     """
-    兼容 ChimeraX 输出中的 chain 表达形式。
+    Handle chain-expression variants in ChimeraX output.
     """
 
     x = str(x or "").strip()
@@ -607,9 +607,9 @@ def normalize_chain_id(x: str) -> str:
 
 def parse_residue_number(text: str) -> Optional[Tuple[int, str]]:
     """
-    解析 residue number 和 insertion code。
+    Parse residue number and insertion code.
 
-    支持：
+    Supports:
       117
       117A
       A:117
@@ -631,13 +631,13 @@ def parse_residue_number(text: str) -> Optional[Tuple[int, str]]:
 
 def parse_qscore_output(qscore_path: str) -> List[Dict]:
     """
-    解析 ChimeraX QScore 输出。
+    Parse ChimeraX QScore output.
 
-    优先兼容标准表格：
+    Prefer compatibility with the standard table:
       Chain Number Name Qavg Qworst Qbb Qsc
       A     1      MET  0.198 ...
 
-    返回：
+    Returns:
       [
         {"chain_id": "A", "resseq": 1, "icode": "", "qscore": 0.198}
       ]
@@ -652,7 +652,7 @@ def parse_qscore_output(qscore_path: str) -> List[Dict]:
         return rows
 
     # ------------------------------------------------------------
-    # 1. 空白分隔表格：Chain Number Name Qavg ...
+    # 1. Whitespace-delimited table: Chain Number Name Qavg ...
     # ------------------------------------------------------------
     header_idx = None
     header_parts = None
@@ -717,7 +717,7 @@ def parse_qscore_output(qscore_path: str) -> List[Dict]:
             return rows
 
     # ------------------------------------------------------------
-    # 2. CSV / TSV 格式
+    # 2. CSV / TSV format
     # ------------------------------------------------------------
     header_line = None
     delimiter = None
@@ -803,7 +803,7 @@ def parse_qscore_output(qscore_path: str) -> List[Dict]:
             return rows
 
     # ------------------------------------------------------------
-    # 3. fallback：逐行正则
+    # 3. Fallback: line-by-line regular expressions
     # ------------------------------------------------------------
     line_regex = re.compile(
         r"(?P<chain>[A-Za-z0-9])\s+"
@@ -860,7 +860,7 @@ def map_qscores_to_chains(
     chain_jsons: Dict[str, Dict]
 ) -> Dict[str, List[Optional[float]]]:
     """
-    把 qscore 输出映射到每条链的 chain_index。
+    Map qscore output to chain_index for each chain.
     """
 
     maps = build_residue_maps(chain_jsons)
@@ -887,7 +887,7 @@ def map_qscores_to_chains(
         idx = maps.get(chain_id, {}).get((resseq, icode))
 
         if idx is None:
-            # 放宽：只按 resseq 匹配
+            # Relaxed fallback: match by resseq only
             for (rseq, ic), ci in maps.get(chain_id, {}).items():
                 if rseq == resseq:
                     idx = ci
@@ -960,7 +960,7 @@ def write_qscore_to_chain_json(
 
 
 # ============================================================
-# 主处理逻辑
+# Main processing logic
 # ============================================================
 
 def process_one_entry(row: Dict, json_root: str, map_table: Dict[str, str], args) -> Dict:
@@ -1237,7 +1237,7 @@ def main():
         "--limit",
         type=int,
         default=0,
-        help="只处理当前 batch 中前 N 个 entry，用于测试。"
+        help="Process only the first N entries in the current batch for testing."
     )
 
     # disorder
@@ -1245,7 +1245,7 @@ def main():
     p.add_argument(
         "--iupred-cmd",
         default="",
-        help='例如 "python /path/to/iupred2a.py"'
+        help='For example: "python /path/to/iupred2a.py"'
     )
     p.add_argument("--iupred-mode", default="long", choices=["long", "short", "glob"])
     p.add_argument("--iupred-timeout", type=int, default=180)
@@ -1256,25 +1256,25 @@ def main():
     p.add_argument(
         "--chimerax-cmd",
         default="",
-        help="ChimeraX 可执行程序路径，例如 chimerax。空则自动搜索。"
+        help="Path to the ChimeraX executable, e.g. chimerax. If empty, search automatically."
     )
     p.add_argument("--qscore-timeout", type=int, default=1800)
 
     p.add_argument(
         "--map-table",
         default="",
-        help="可选 CSV/TSV，包含 entry_id,map_path。"
+        help="Optional CSV/TSV containing entry_id,map_path."
     )
-    p.add_argument("--map-root", default="", help="map 根目录。")
+    p.add_argument("--map-root", default="", help="Map root directory.")
     p.add_argument(
         "--map-pattern",
         default="",
-        help='例如 "{entry_id}.map" 或 "emd_{emdb_id}.map"。'
+        help='For example: "{entry_id}.map" or "emd_{emdb_id}.map".'
     )
     p.add_argument(
         "--keep-qscore-raw",
         default="",
-        help="可选，保存 QScore 原始输出目录。"
+        help="Optional directory for saving raw QScore outputs."
     )
 
     args = p.parse_args()

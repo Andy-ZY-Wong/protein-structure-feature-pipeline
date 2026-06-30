@@ -1,1 +1,3 @@
 entry_id,cfdb_id,emdb_id,pdb_id,structure_path,has_structure,fasta_path,has_fasta
+demo_1abc,DEMO_1ABC,EMD-DEMO-0001,1ABC,example_data/raw/mmcif/demo_1abc.pdb,yes,example_data/raw/fasta/demo_1abc.fasta,yes
+demo_2xyz,DEMO_2XYZ,EMD-DEMO-0002,2XYZ,example_data/raw/mmcif/demo_2xyz.pdb,yes,example_data/raw/fasta/demo_2xyz.fasta,yes

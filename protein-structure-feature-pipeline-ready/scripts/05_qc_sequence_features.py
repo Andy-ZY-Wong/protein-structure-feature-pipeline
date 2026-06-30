@@ -4,10 +4,10 @@
 """
 05_qc_sequence_features.py
 
-功能：
-对已经计算完成的 sequence features 做全库 QC。
+Purpose:
+Perform database-wide QC on already computed sequence features.
 
-检查对象：
+Checked objects:
 1. Secondary Structure
 2. RSA
 3. Buried residues
@@ -17,13 +17,13 @@
 7. Bond outliers
 8. Q-score
 
-输出：
-1. entry-level QC 汇总表
-2. chain-level QC 汇总表
-3. problem-level 详细问题表
+Output:
+1. entry-level QC summary table
+2. chain-level QC summary table
+3. problem-level detailed issue table
 
-不会重新计算任何 feature。
-只读取已有 JSON 并检查数据是否合理。
+No features are recomputed.
+Only existing JSON files are read and checked for consistency.
 """
 
 import argparse

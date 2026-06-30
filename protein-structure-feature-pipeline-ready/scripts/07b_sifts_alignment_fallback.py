@@ -4,20 +4,20 @@
 """
 07b_sifts_alignment_fallback.py
 
-用途：
-在已有 chain JSON 上重建 UniProt mapping 与外部注释。
+Purpose:
+Rebuild UniProt mappings and external annotations on existing chain JSON files.
 
-策略：
-1. 先尝试 direct SIFTS residue mapping。
-   如果 coverage 和 identity 同时达标，直接使用。
-2. 如果 direct SIFTS 不可靠，不再依赖本地 pdb_resseq。
-   改用当前 JSON 的 chain.sequence 与候选 UniProt sequence 做 alignment fallback。
-3. 用最终得到的 chain_index -> uniprot_pos 映射，把 UniProt features、SIFTS Pfam、SIFTS InterPro 转回 chain_index。
+Strategy:
+1. First try direct SIFTS residue mapping.
+   Use it directly if both coverage and identity pass thresholds.
+2. If direct SIFTS is unreliable, do not rely on local pdb_resseq.
+   Instead, use alignment fallback between the current JSON chain.sequence and candidate UniProt sequences.
+3. Use the final chain_index -> uniprot_pos mapping to convert UniProt features, SIFTS Pfam, and SIFTS InterPro back to chain_index.
 
-注意：
-- 不重新计算本地结构指标。
-- 会覆盖 JSON 中已有的 uniprot_mapping / external_annotations / tracks.pfam / tracks.interpro / tracks.uniprot_features。
-- 会保留 direct SIFTS 的 QC 结果到 sifts_residue_mapping_qc。
+Notes:
+- Local structure features are not recomputed.
+- Existing uniprot_mapping / external_annotations / tracks.pfam / tracks.interpro / tracks.uniprot_features fields in JSON will be overwritten.
+- Direct SIFTS QC results are retained in sifts_residue_mapping_qc.
 """
 
 import argparse

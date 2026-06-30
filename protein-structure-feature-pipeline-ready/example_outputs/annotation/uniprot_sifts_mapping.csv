@@ -1,0 +1,5 @@
+entry_id,pdb_id,chain_id,uniprot_accession,uniprot_id,mapping_coverage,mapping_identity,mapping_quality,mapping_method
+demo_1abc,1ABC,A,P00001,DEMO_PROT_A,1.0,1.0,HIGH,demo_sifts_exact_match
+demo_1abc,1ABC,B,P00002,DEMO_PROT_B,1.0,1.0,HIGH,demo_sifts_exact_match
+demo_2xyz,2XYZ,A,P00003,DEMO_PROT_C,1.0,1.0,HIGH,demo_sifts_exact_match
+demo_2xyz,2XYZ,C,P00004,DEMO_PROT_D,1.0,1.0,HIGH,demo_sifts_exact_match

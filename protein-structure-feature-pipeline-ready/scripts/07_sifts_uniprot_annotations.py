@@ -4,19 +4,19 @@
 """
 07_sifts_uniprot_annotations.py
 
-功能：
-1. 读取已有 chain JSON；
-2. 根据 JSON 中的 pdb_id / chain_id / residue_mapping；
-3. 下载并解析 SIFTS XML，建立 PDB residue -> UniProt residue 映射；
-4. 调用 UniProt JSON，提取 UniProt sequence features；
-5. 把 UniProt feature 坐标转换回 chain_index_1_based；
-6. 写回 chain JSON：
+Purpose:
+1. Read existing chain JSON files;
+2. Use pdb_id / chain_id / residue_mapping from JSON;
+3. Download and parse SIFTS XML to build PDB residue -> UniProt residue mappings;
+4. Query UniProt JSON and extract UniProt sequence features;
+5. Convert UniProt feature coordinates back to chain_index_1_based;
+6. Write results back to chain JSON:
    - uniprot_mapping
    - external_annotations
 
-不重新计算本地结构指标。
-不使用 .fullLen / .manAlign / .toRCSB。
-如果本地 chain_id 与 SIFTS chain_id 不完全一致，脚本会尝试按 residue number 自动选择最匹配的 SIFTS chain。
+Local structure features are not recomputed.
+Files such as .fullLen / .manAlign / .toRCSB are not used.
+If the local chain_id does not exactly match the SIFTS chain_id, the script tries to select the best SIFTS chain by residue number.
 """
 
 import argparse
@@ -82,7 +82,7 @@ AA3_TO_1 = {
 
 
 # ============================================================
-# 基础工具
+# Basic utilities
 # ============================================================
 
 def now_iso() -> str:
@@ -119,7 +119,7 @@ def attr_get(elem, names: List[str], default: str = "") -> str:
     for n in names:
         if n in elem.attrib:
             return elem.attrib.get(n, default)
-    # 兼容大小写差异
+    # Handle case differences
     lower_map = {k.lower(): v for k, v in elem.attrib.items()}
     for n in names:
         if n.lower() in lower_map:
@@ -137,7 +137,7 @@ def normalize_chain_id(x: str) -> str:
 
 def parse_resnum_icode(x: Any) -> Tuple[Optional[int], str]:
     """
-    支持：
+    Supports:
       123
       123A
       -1
@@ -167,7 +167,7 @@ def get_feature_pos(loc_part: Any) -> Optional[int]:
     """
     UniProt JSON location:
       {"start": {"value": 1, "modifier": "EXACT"}, "end": {...}}
-    有时 value 可能不存在或是字符串。
+    Sometimes value may be missing or stored as a string.
     """
     if not isinstance(loc_part, dict):
         return None
@@ -201,7 +201,7 @@ def feature_range_from_uniprot_feature(feature: Dict) -> Tuple[Optional[int], Op
 
 
 # ============================================================
-# 读取 manifest / JSON
+# Read manifest / JSON
 # ============================================================
 
 def read_manifest(path: Path) -> List[Dict]:
@@ -219,7 +219,7 @@ def get_entries_from_manifest(path: Path, limit_entries: int = 0) -> List[str]:
         if not entry_id or entry_id in seen:
             continue
 
-        # 优先处理已有 skeleton 的结构
+        # Prefer structures with existing skeletons
         has_structure = row.get("has_structure", "").lower()
         skeleton_status = row.get("skeleton_status", "").lower()
 
@@ -257,7 +257,7 @@ def find_chain_jsons(json_root: Path, entry_id: str) -> List[Path]:
 
 
 # ============================================================
-# SIFTS 下载与解析
+# SIFTS download and parsing
 # ============================================================
 
 def download_url(url: str, out_path: Path, retries: int = 3, sleep_sec: float = 1.0) -> None:
@@ -287,8 +287,8 @@ def download_url(url: str, out_path: Path, retries: int = 3, sleep_sec: float = 
 
 def fetch_sifts_xml_gz(pdb_id: str, cache_dir: Path) -> Path:
     """
-    SIFTS XML 推荐路径：
-      split_xml/{第二三位}/{pdb}.xml.gz
+    Recommended SIFTS XML path:
+      split_xml/{second and third characters}/{pdb}.xml.gz
     fallback：
       xml/{pdb}.xml.gz
     """
@@ -319,7 +319,7 @@ def fetch_sifts_xml_gz(pdb_id: str, cache_dir: Path) -> Path:
 
 def parse_sifts_xml(xml_gz_path: Path) -> List[Dict]:
     """
-    返回 residue-level mapping rows:
+    Return residue-level mapping rows:
       [
         {
           "pdb_chain": "A",
@@ -332,7 +332,7 @@ def parse_sifts_xml(xml_gz_path: Path) -> List[Dict]:
         }
       ]
 
-    SIFTS XML 的 residue 节点里通常含 crossRefDb dbSource="PDB" 和 dbSource="UniProt"。
+    SIFTS XML residue nodes usually contain crossRefDb entries with dbSource="PDB" and dbSource="UniProt".
     """
     with gzip.open(xml_gz_path, "rb") as f:
         tree = ET.parse(f)
@@ -399,7 +399,7 @@ def parse_sifts_xml(xml_gz_path: Path) -> List[Dict]:
 
 def build_sifts_index(rows: List[Dict]) -> Dict:
     """
-    构建索引：
+    Build indexes:
       by_chain_res[(chain, resseq, icode)] -> row
       by_chain_res_noicode[(chain, resseq)] -> row
       chains -> set
@@ -426,7 +426,7 @@ def build_sifts_index(rows: List[Dict]) -> Dict:
 
 def infer_best_sifts_chain(chain_json: Dict, sifts_idx: Dict) -> Tuple[str, int]:
     """
-    如果 local chain_id 无法直接匹配 SIFTS chain，按 residue number + aa 统计最佳 chain。
+    If local chain_id cannot directly match a SIFTS chain, choose the best chain using residue number + amino acid statistics.
     """
     residue_mapping = chain_json.get("residue_mapping", [])
     scores = Counter()
@@ -456,7 +456,7 @@ def infer_best_sifts_chain(chain_json: Dict, sifts_idx: Dict) -> Tuple[str, int]
 
 
 # ============================================================
-# UniProt JSON 下载与 features 解析
+# UniProt JSON download and feature parsing
 # ============================================================
 
 def fetch_uniprot_json(acc: str, cache_dir: Path) -> Path:
@@ -523,7 +523,7 @@ def extract_uniprot_features(
 
 
 # ============================================================
-# 映射并写回 JSON
+# Map and write back to JSON
 # ============================================================
 
 def select_sifts_chain_for_json(chain_json: Dict, sifts_idx: Dict) -> Tuple[str, str]:
@@ -541,7 +541,7 @@ def select_sifts_chain_for_json(chain_json: Dict, sifts_idx: Dict) -> Tuple[str,
 
 def map_chain_json_to_uniprot(chain_json: Dict, sifts_idx: Dict) -> Tuple[Dict, str]:
     """
-    用 SIFTS 建立当前 chain JSON 的 chain_index -> UniProt position。
+    Use SIFTS to build chain_index -> UniProt position mapping for the current chain JSON.
     """
     chain = chain_json.get("chain", {})
     chain_id = normalize_chain_id(chain.get("chain_id", ""))
@@ -668,7 +668,7 @@ def convert_uniprot_features_to_chain_annotations(
     uniprot_feature_by_acc: Dict[str, List[Dict]]
 ) -> Dict:
     """
-    把 UniProt feature 坐标转换为 chain_index 坐标。
+    Convert UniProt feature coordinates to chain_index coordinates.
     """
     items = []
     accs = uniprot_mapping.get("uniprot_accessions", [])
@@ -692,7 +692,7 @@ def convert_uniprot_features_to_chain_annotations(
             if not chain_positions:
                 continue
 
-            # 判断 feature 在当前结构链中是否连续；不连续也保留，但标记 fragments
+            # Check whether the feature is continuous in the current structure chain; keep discontinuous features but mark fragments
             fragments = []
             frag_start = None
             prev = None
@@ -777,7 +777,7 @@ def update_chain_json(
     d["uniprot_mapping"] = uniprot_mapping
     d["external_annotations"] = external_annotations
 
-    # 同时放到 tracks 下面，方便前端后续读取
+    # Also place results under tracks for downstream/frontend reading
     d.setdefault("tracks", {})
     d["tracks"]["uniprot_features"] = {
         "status": external_annotations["status"],
@@ -828,7 +828,7 @@ def update_chain_json(
 
 
 # ============================================================
-# 主流程
+# Main workflow
 # ============================================================
 
 def write_summary(path: Path, rows: List[Dict]) -> None:
@@ -925,7 +925,7 @@ def main():
             })
             continue
 
-        # 读第一个 chain JSON 获取 pdb_id
+        # Read the first chain JSON to get pdb_id
         first = read_json(chain_jsons[0])
         pdb_id = normalize_pdb_id(first.get("entry", {}).get("pdb_id", ""))
 

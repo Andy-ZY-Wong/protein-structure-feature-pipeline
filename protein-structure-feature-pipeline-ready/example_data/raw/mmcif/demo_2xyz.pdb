@@ -1,0 +1,39 @@
+HEADER    DEMO STRUCTURE                            01-JAN-26   DEMO
+TITLE     Synthetic demo protein with a modified residue
+ATOM      1 N    MSE A   1       3.800   0.000   0.000  1.00 20.00            N
+ATOM      2 CA   MSE A   1       5.000   0.500   0.000  1.00 20.00            C
+ATOM      3 C    MSE A   1       6.200   0.000   0.000  1.00 20.00            C
+ATOM      4 O    MSE A   1       6.900  -0.600   0.000  1.00 20.00            O
+ATOM      5 CB   MSE A   1       4.900   1.700   0.500  1.00 20.00            C
+ATOM      6 N    LYS A   2       7.600   0.000   0.000  1.00 20.00            N
+ATOM      7 CA   LYS A   2       8.800   0.500   0.000  1.00 20.00            C
+ATOM      8 C    LYS A   2      10.000   0.000   0.000  1.00 20.00            C
+ATOM      9 O    LYS A   2      10.700  -0.600   0.000  1.00 20.00            O
+ATOM     10 CB   LYS A   2       8.700   1.700   0.500  1.00 20.00            C
+ATOM     11 N    ASP A   3      11.400   0.000   0.000  1.00 20.00            N
+ATOM     12 CA   ASP A   3      12.600   0.500   0.000  1.00 20.00            C
+ATOM     13 C    ASP A   3      13.800   0.000   0.000  1.00 20.00            C
+ATOM     14 O    ASP A   3      14.500  -0.600   0.000  1.00 20.00            O
+ATOM     15 CB   ASP A   3      12.500   1.700   0.500  1.00 20.00            C
+ATOM     16 N    GLY A   4      15.200   0.000   0.000  1.00 20.00            N
+ATOM     17 CA   GLY A   4      16.400   0.500   0.000  1.00 20.00            C
+ATOM     18 C    GLY A   4      17.600   0.000   0.000  1.00 20.00            C
+ATOM     19 O    GLY A   4      18.300  -0.600   0.000  1.00 20.00            O
+TER      20      GLY A   4
+ATOM     21 N    SER C   1      28.800   0.000   0.000  1.00 20.00            N
+ATOM     22 CA   SER C   1      30.000   0.500   0.000  1.00 20.00            C
+ATOM     23 C    SER C   1      31.200   0.000   0.000  1.00 20.00            C
+ATOM     24 O    SER C   1      31.900  -0.600   0.000  1.00 20.00            O
+ATOM     25 CB   SER C   1      29.900   1.700   0.500  1.00 20.00            C
+ATOM     26 N    THR C   2      32.600   0.000   0.000  1.00 20.00            N
+ATOM     27 CA   THR C   2      33.800   0.500   0.000  1.00 20.00            C
+ATOM     28 C    THR C   2      35.000   0.000   0.000  1.00 20.00            C
+ATOM     29 O    THR C   2      35.700  -0.600   0.000  1.00 20.00            O
+ATOM     30 CB   THR C   2      33.700   1.700   0.500  1.00 20.00            C
+ATOM     31 N    TYR C   3      36.400   0.000   0.000  1.00 20.00            N
+ATOM     32 CA   TYR C   3      37.600   0.500   0.000  1.00 20.00            C
+ATOM     33 C    TYR C   3      38.800   0.000   0.000  1.00 20.00            C
+ATOM     34 O    TYR C   3      39.500  -0.600   0.000  1.00 20.00            O
+ATOM     35 CB   TYR C   3      37.500   1.700   0.500  1.00 20.00            C
+TER      36      TYR C   3
+END

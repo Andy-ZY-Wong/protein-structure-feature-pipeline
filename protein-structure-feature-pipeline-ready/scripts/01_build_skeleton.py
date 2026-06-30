@@ -4,28 +4,28 @@
 """
 01_build_skeleton.py
 
-功能：
-根据 manifest.csv，为每个蛋白结构条目生成每条链的 JSON 骨架。
+Purpose:
+Generate per-chain JSON skeletons for each protein structure entry based on manifest.csv.
 
-输入：
+Input:
 - manifest.csv / manifest_with_fasta.csv
-  必须至少包含：
+  Must contain at least:
     entry_id
     cfdb_id
     emdb_id
     pdb_id
     structure_path
     has_structure
-  可选包含：
+  Optional columns:
     fasta_path
     has_fasta
 
-输出：
+Output:
 - output/json/{entry_id}/entry.json
 - output/json/{entry_id}/chains/{chain_id}.json
-- 更新后的 manifest_skeleton.csv
+- Updated manifest_skeleton.csv
 
-每条链 JSON 包含：
+Each chain JSON contains:
 - entry_id / cfdb_id / emdb_id / pdb_id
 - chain_id
 - chain sequence
@@ -33,9 +33,9 @@
 - sequence hash
 - sequence group
 - residue_mapping: chain_index -> pdb residue number
-- FASTA 参考信息（如果有）
-- tracks 空容器
-- 各阶段状态
+- FASTA reference information, if available
+- Empty tracks container
+- Stage status fields
 """
 
 import argparse
@@ -56,7 +56,7 @@ from Bio.PDB.Polypeptide import is_aa
 from Bio.SeqUtils import seq1
 
 
-# 一些常见修饰氨基酸映射
+# Common modified amino-acid mappings
 CUSTOM_AA_MAP = {
     "MSE": "M",
     "SEC": "U",
@@ -71,7 +71,7 @@ def now_iso() -> str:
 
 def safe_filename(x: str) -> str:
     """
-    链 ID 有时可能包含特殊字符，用于文件名时做简单清理。
+    Chain IDs may contain special characters; clean them for file names.
     """
     x = str(x)
     for ch in ["/", "\\", " ", ":", ";", ",", "|"]:
@@ -85,10 +85,10 @@ def sha256_short(seq: str, n: int = 12) -> str:
 
 def open_maybe_gzip_to_temp(path: str) -> Tuple[str, Optional[str]]:
     """
-    Bio.PDB 对 gzip 文件兼容性不稳定，因此如果是 .gz，先解压到临时文件。
-    返回：
+    Bio.PDB handles gzip files inconsistently, so .gz files are decompressed to temporary files first.
+    Returns:
       parse_path, temp_path
-    如果不是 gz：
+    If the file is not gzipped:
       temp_path = None
     """
     if not path.lower().endswith(".gz"):
@@ -116,7 +116,7 @@ def open_maybe_gzip_to_temp(path: str) -> Tuple[str, Optional[str]]:
 
 def parse_structure(structure_path: str, entry_id: str):
     """
-    读取 PDB/mmCIF 结构。
+    Read a PDB/mmCIF structure.
     """
     parse_path, tmp_path = open_maybe_gzip_to_temp(structure_path)
 
@@ -138,7 +138,7 @@ def parse_structure(structure_path: str, entry_id: str):
 
 def residue_to_one_letter(res) -> str:
     """
-    把 Bio.PDB residue 转换成单字母氨基酸。
+    Convert a Bio.PDB residue to a one-letter amino-acid code.
     """
     resname = res.get_resname().strip().upper()
     try:
@@ -153,10 +153,10 @@ def residue_to_one_letter(res) -> str:
 
 def extract_protein_chains(structure) -> List[Dict]:
     """
-    从结构中提取所有蛋白链。
+    Extract all protein chains from a structure.
 
-    只读取第一个 model。
-    每条链返回：
+    Only the first model is used.
+    Each chain returns:
     {
       chain_id,
       sequence,
@@ -184,7 +184,7 @@ def extract_protein_chains(structure) -> List[Dict]:
 
         for res in chain:
             # res.id = (hetfield, resseq, icode)
-            # 只保留氨基酸残基。standard=False 可以保留 MSE 等修饰氨基酸。
+            # Keep amino-acid residues only. standard=False keeps modified residues such as MSE.
             if not is_aa(res, standard=False):
                 continue
 
@@ -205,7 +205,7 @@ def extract_protein_chains(structure) -> List[Dict]:
 
         seq = "".join(seq_chars)
 
-        # 跳过没有蛋白残基的链，比如水、配体链等
+        # Skip chains without protein residues, such as water or ligand-only chains.
         if len(seq) == 0:
             continue
 
@@ -221,8 +221,8 @@ def extract_protein_chains(structure) -> List[Dict]:
 
 def read_fasta_records(fasta_path: str) -> List[Dict]:
     """
-    读取 FASTA，支持 .gz。
-    返回多个 record。
+    Read FASTA files, including .gz files.
+    Return multiple records.
     """
 
     if not fasta_path:
@@ -254,16 +254,16 @@ def read_fasta_records(fasta_path: str) -> List[Dict]:
 
 def simple_fasta_match(chain_seq: str, fasta_records: List[Dict]) -> Dict:
     """
-    为一条 PDB chain sequence 找最可能对应的 FASTA record。
+    Find the most likely FASTA record for a PDB chain sequence.
 
-    这里不做复杂 alignment，只做 skeleton 阶段的轻量匹配：
-    1. 完全一致
-    2. chain_seq 是 FASTA 的子串
-    3. FASTA 是 chain_seq 的子串
-    4. 如果只有一个 FASTA record，就作为候选参考
-    5. 否则返回 unmatched
+    No complex alignment is performed here; this is a lightweight skeleton-stage match:
+    1. Exact match
+    2. chain_seq is a substring of the FASTA sequence
+    3. FASTA sequence is a substring of chain_seq
+    4. If there is only one FASTA record, keep it as the candidate reference
+    5. Otherwise return unmatched
 
-    真正精确的 UniProt / reference mapping 放到后续步骤做。
+    Accurate UniProt/reference mapping is handled in later stages.
     """
 
     if not fasta_records:
@@ -279,7 +279,7 @@ def simple_fasta_match(chain_seq: str, fasta_records: List[Dict]) -> Dict:
 
     chain_seq = chain_seq.upper()
 
-    # 1. 完全一致
+    # 1. Exact match
     for rec in fasta_records:
         if chain_seq == rec["sequence"]:
             return {
@@ -292,7 +292,7 @@ def simple_fasta_match(chain_seq: str, fasta_records: List[Dict]) -> Dict:
                 "note": ""
             }
 
-    # 2. chain 是 fasta 子串
+    # 2. chain is a substring of the FASTA sequence
     for rec in fasta_records:
         if chain_seq in rec["sequence"]:
             return {
@@ -305,7 +305,7 @@ def simple_fasta_match(chain_seq: str, fasta_records: List[Dict]) -> Dict:
                 "note": "PDB chain sequence is contained in FASTA sequence."
             }
 
-    # 3. fasta 是 chain 子串
+    # 3. FASTA sequence is a substring of the chain
     for rec in fasta_records:
         if rec["sequence"] in chain_seq:
             return {
@@ -318,7 +318,7 @@ def simple_fasta_match(chain_seq: str, fasta_records: List[Dict]) -> Dict:
                 "note": "FASTA sequence is contained in PDB chain sequence."
             }
 
-    # 4. 如果只有一个 FASTA record，则保存为候选
+    # 4. If there is only one FASTA record, keep it as a candidate
     if len(fasta_records) == 1:
         rec = fasta_records[0]
         return {
@@ -331,7 +331,7 @@ def simple_fasta_match(chain_seq: str, fasta_records: List[Dict]) -> Dict:
             "note": "Only one FASTA record found, but no exact/subsequence match. Detailed alignment should be done later."
         }
 
-    # 5. 多个 FASTA 且不能简单匹配
+    # 5. Multiple FASTA records and no simple match
     return {
         "status": "unmatched",
         "method": "no_simple_match",
@@ -345,8 +345,8 @@ def simple_fasta_match(chain_seq: str, fasta_records: List[Dict]) -> Dict:
 
 def assign_sequence_groups(chains: List[Dict]) -> Dict[str, str]:
     """
-    按 chain sequence 分组。
-    返回：
+    Group chains by chain sequence.
+    Returns:
       sequence_hash -> group_id
     """
 
@@ -373,7 +373,7 @@ def build_chain_json(
     fasta_match: Dict
 ) -> Dict:
     """
-    构建单条链 JSON 骨架。
+    Build the JSON skeleton for one chain.
     """
 
     entry_id = row.get("entry_id", "")
@@ -446,8 +446,8 @@ def write_json(path: str, data: Dict) -> None:
 
 def process_one_entry(row: Dict, out_dir: str, overwrite: bool = False) -> Tuple[str, Dict]:
     """
-    处理 manifest 中的一行。
-    返回：
+    Process one row in the manifest.
+    Returns:
       status, updated_row
     """
 
@@ -494,11 +494,11 @@ def process_one_entry(row: Dict, out_dir: str, overwrite: bool = False) -> Tuple
             updated["note"] = append_note(updated.get("note", ""), "No protein chains found")
             return "failed", updated
 
-        # 读取 FASTA，如果有
+        # Read FASTA if available
         fasta_path = row.get("fasta_path", "").strip()
         fasta_records = read_fasta_records(fasta_path) if fasta_path else []
 
-        # 分组
+        # Group chains
         hash_to_group = assign_sequence_groups(chains)
 
         chain_summaries = []
@@ -616,7 +616,7 @@ def build_skeleton_from_manifest(
     overwrite: bool = False
 ) -> None:
     """
-    主流程。
+    Main workflow.
     """
 
     if not os.path.exists(manifest_path):
@@ -662,10 +662,10 @@ def build_skeleton_from_manifest(
         stats[status] = stats.get(status, 0) + 1
         updated_rows.append(updated)
 
-    # limit 模式下，剩余的原样保留
+    # In limit mode, keep the remaining rows unchanged
     updated_rows.extend(rows_remaining)
 
-    # 保证新增字段存在
+    # Ensure added fields exist
     out_fields = list(fieldnames)
     for col in ["skeleton_status", "overall_status", "note"]:
         if col not in out_fields:
@@ -695,32 +695,32 @@ def main():
     parser.add_argument(
         "--manifest",
         required=True,
-        help="manifest.csv 或 manifest_with_fasta.csv 路径"
+        help="Path to manifest.csv or manifest_with_fasta.csv"
     )
 
     parser.add_argument(
         "--out-dir",
         required=True,
-        help="输出 JSON 根目录，例如 example_outputs/json"
+        help="Output JSON root directory, for example example_outputs/json"
     )
 
     parser.add_argument(
         "--manifest-out",
         required=True,
-        help="输出更新后的 manifest，例如 manifest_skeleton.csv"
+        help="Output path for the updated manifest, for example manifest_skeleton.csv"
     )
 
     parser.add_argument(
         "--limit",
         type=int,
         default=0,
-        help="只处理前 N 行，用于测试；默认 0 表示处理全部"
+        help="Process only the first N rows for testing; default 0 processes all rows"
     )
 
     parser.add_argument(
         "--overwrite",
         action="store_true",
-        help="如果 JSON 已存在，是否覆盖重建"
+        help="Overwrite existing JSON files if they already exist"
     )
 
     args = parser.parse_args()

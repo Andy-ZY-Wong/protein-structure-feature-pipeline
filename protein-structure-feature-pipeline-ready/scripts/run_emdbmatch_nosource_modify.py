@@ -30,7 +30,7 @@ def read_manifest(path):
     return out
 
 
-def read_entries(path, entry_col="蛋白质ID(entry_id)"):
+def read_entries(path, entry_col="entry_id"):
     entries = []
     with open(path, newline="", encoding="utf-8-sig", errors="ignore") as f:
         reader = csv.DictReader(f)

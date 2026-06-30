@@ -139,7 +139,7 @@ def main():
 
     files = set()
 
-    # 1. 从所有 chain JSON 读取 source_files
+    # 1. Read source_files from all chain JSON files
     for jf in chain_jsons:
         d = read_json(jf)
         sf = d.get("source_files", {})
@@ -150,7 +150,7 @@ def main():
             add_file(files, Path(p))
             add_file(files, Path(p).resolve())
 
-            # 同目录同 stem 文件
+            # Files in the same directory with the same stem
             for cand in same_stem_candidates(Path(p)):
                 add_file(files, cand)
 
@@ -158,7 +158,7 @@ def main():
             for cand in same_stem_candidates(rp):
                 add_file(files, cand)
 
-    # 2. 用 entry_id / pdb_id / cfdb_id / emdb_id 搜 batch 文件名
+    # 2. Search batch filenames using entry_id / pdb_id / cfdb_id / emdb_id
     patterns = set()
     for x in [entry_id, pdb_id, pdb_id.lower(), pdb_id.upper(), cfdb_id, emdb_id]:
         if x and x.lower() not in {"na", "none", "null"}:
@@ -180,7 +180,7 @@ def main():
     print("files found:", len(files))
     print("wrote:", files_txt)
 
-    # 3. 输出 head
+    # 3. Output file heads
     for p in files:
         safe_name = str(p).replace("/", "_").replace(" ", "_")
         out = out_dir / f"{safe_name}.head.txt"

@@ -4,27 +4,27 @@
 """
 00b_add_fasta_to_manifest.py
 
-功能：
-在已有 manifest.csv 中追加 FASTA 文件路径信息。
+Purpose:
+Append FASTA file path information to an existing manifest.csv.
 
-输入：
-- 已有 manifest.csv
-- 一个或多个目录，例如：
+Input:
+- Existing manifest.csv
+- One or more directories, for example:
   example_data/raw/web/260304
   example_data/raw/web/260305
 
-输出：
-- 新的 manifest_with_fasta.csv
-- 新增字段：
+Output:
+- New manifest_with_fasta.csv
+- Added fields:
   fasta_path
   has_fasta
   fasta_matched_by
 
-匹配优先级：
-1. 文件名精确匹配 cfdb_id / entry_id
-2. 文件名精确匹配 pdb_id
-3. 路径中包含 cfdb_id / entry_id
-4. 路径中包含 pdb_id
+Matching priority:
+1. Exact filename match to cfdb_id / entry_id
+2. Exact filename match to pdb_id
+3. Path contains cfdb_id / entry_id
+4. Path contains pdb_id
 """
 
 import argparse
@@ -71,7 +71,7 @@ def is_fasta_file(path: Path) -> bool:
 
 def index_fasta_files(fasta_dirs: List[str]) -> Tuple[Dict[str, List[str]], List[str]]:
     """
-    扫描目录，建立 FASTA 索引：
+    Scan directories and build a FASTA index:
     stem.lower() -> [full_path]
     """
 
@@ -115,8 +115,8 @@ def find_fasta_path(
     all_fasta_files: List[str],
 ) -> Tuple[str, str]:
     """
-    按优先级查找 FASTA 文件。
-    返回：
+    Find FASTA files according to priority.
+    Returns:
     fasta_path, matched_by
     """
 
@@ -124,31 +124,31 @@ def find_fasta_path(
     cfdb_key = normalize_id(cfdb_id)
     pdb_key = normalize_id(pdb_id)
 
-    # 1. 文件名精确匹配 CFDB
+    # 1. Exact filename match to CFDB id
     if cfdb_key and cfdb_key in fasta_index:
         return fasta_index[cfdb_key][0], "exact_cfdb"
 
-    # 2. 文件名精确匹配 entry_id
+    # 2. Exact filename match to entry_id
     if entry_key and entry_key in fasta_index:
         return fasta_index[entry_key][0], "exact_entry"
 
-    # 3. 文件名精确匹配 PDB
+    # 3. Exact filename match to PDB id
     if pdb_key and pdb_key in fasta_index:
         return fasta_index[pdb_key][0], "exact_pdb"
 
-    # 4. 路径包含 CFDB
+    # 4. Path contains CFDB id
     if cfdb_key:
         for p in all_fasta_files:
             if cfdb_key in p.lower():
                 return p, "contains_cfdb"
 
-    # 5. 路径包含 entry_id
+    # 5. Path contains entry_id
     if entry_key:
         for p in all_fasta_files:
             if entry_key in p.lower():
                 return p, "contains_entry"
 
-    # 6. 路径包含 PDB
+    # 6. Path contains PDB id
     if pdb_key:
         for p in all_fasta_files:
             if pdb_key in p.lower():
@@ -213,7 +213,7 @@ def add_fasta_to_manifest(manifest_in: str, fasta_dirs: List[str], manifest_out:
 
             rows_out.append(row)
 
-    # 输出字段：保留原字段，并追加 FASTA 字段
+    # Output fields: keep original fields and append FASTA fields
     out_fields = list(fieldnames)
 
     for col in ["fasta_path", "has_fasta", "fasta_matched_by"]:
@@ -241,20 +241,20 @@ def main():
     parser.add_argument(
         "--manifest",
         required=True,
-        help="已有 manifest.csv 路径"
+        help="Path to the existing manifest.csv"
     )
 
     parser.add_argument(
         "--fasta-dirs",
         nargs="+",
         required=True,
-        help="存放 FASTA 文件的一个或多个目录"
+        help="One or more directories containing FASTA files"
     )
 
     parser.add_argument(
         "--out",
         required=True,
-        help="输出新的 manifest_with_fasta.csv 路径"
+        help="Output path for the new manifest_with_fasta.csv"
     )
 
     args = parser.parse_args()
