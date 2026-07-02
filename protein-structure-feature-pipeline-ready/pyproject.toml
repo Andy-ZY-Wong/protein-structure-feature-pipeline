@@ -1,8 +1,0 @@
-[project]
-name = "protein-structure-feature-pipeline"
-version = "0.1.0"
-description = "A reproducible Python/Linux pipeline for protein structure feature extraction and chain-level annotation."
-requires-python = ">=3.10"
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]

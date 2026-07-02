@@ -1,8 +1,0 @@
-numpy
-pandas
-biopython
-mmcif-pdbx
-pyyaml
-tqdm
-pytest
-matplotlib
