@@ -1,0 +1,5 @@
+entry_id,pdb_id,chain_id,chain_length,secondary_structure_status,rsa_status,disorder_status,qscore_status,mean_qscore
+demo_1abc,1ABC,A,5,done,done,done,done,0.68
+demo_1abc,1ABC,B,3,done,done,done,done,0.67
+demo_2xyz,2XYZ,A,4,done,done,done,done,0.675
+demo_2xyz,2XYZ,C,3,done,done,done,done,0.67

@@ -1,0 +1,66 @@
+{
+  "schema_version": "sequence_tracks_entry_v1",
+  "generated_at": "2026-06-30T08:02:40",
+  "entry": {
+    "entry_id": "demo_2xyz",
+    "cfdb_id": "DEMO_2XYZ",
+    "emdb_id": "EMD-DEMO-0002",
+    "pdb_id": "2XYZ"
+  },
+  "source_files": {
+    "structure_path": "example_data/raw/mmcif/demo_2xyz.pdb",
+    "fasta_path": "example_data/raw/fasta/demo_2xyz.fasta"
+  },
+  "chain_count": 2,
+  "chains": [
+    {
+      "chain_id": "A",
+      "length": 4,
+      "sequence_hash": "aa7342101c89",
+      "sequence_group": "group_001",
+      "json_path": "example_outputs/json/demo_2xyz/chains/A.json",
+      "fasta_match_status": "matched"
+    },
+    {
+      "chain_id": "C",
+      "length": 3,
+      "sequence_hash": "39ade9d9af38",
+      "sequence_group": "group_002",
+      "json_path": "example_outputs/json/demo_2xyz/chains/C.json",
+      "fasta_match_status": "matched"
+    }
+  ],
+  "sequence_groups": [
+    {
+      "group_id": "group_001",
+      "sequence_hash": "aa7342101c89",
+      "length": 4,
+      "chains": [
+        "A"
+      ]
+    },
+    {
+      "group_id": "group_002",
+      "sequence_hash": "39ade9d9af38",
+      "length": 3,
+      "chains": [
+        "C"
+      ]
+    }
+  ],
+  "status": {
+    "skeleton": "done",
+    "local_tracks": "pending",
+    "uniprot_mapping": "pending",
+    "external_annotations": "pending",
+    "frontend_tracks": "pending"
+  },
+  "logs": [
+    {
+      "time": "2026-06-30T08:02:40",
+      "step": "skeleton",
+      "status": "done",
+      "message": "Generated skeleton for 2 chains."
+    }
+  ]
+}
